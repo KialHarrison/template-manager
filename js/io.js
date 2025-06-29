@@ -19,6 +19,7 @@ export const initializeIO = () => {
         let csv = headers.join(",") + "\n";
         data.forEach(folderObj => {
             folderObj.templates.forEach(template => {
+                // Ensure content is properly quoted and escaped for CSV
                 const folder = `"${folderObj.folder.replace(/"/g, '""')}"`;
                 const title = `"${template.title.replace(/"/g, '""')}"`;
                 const content = `"${template.content.replace(/"/g, '""')}"`;
@@ -31,50 +32,84 @@ export const initializeIO = () => {
 
     const convertFromCsv = (csv) => {
         console.log('convertFromCsv called with CSV:', csv);
-        const lines = csv.split(/\r?\n/).filter(line => line.trim() !== '');
+        const templates = [];
+        const lines = csv.split('\n');
+
         if (lines.length === 0) {
             console.log('No lines found in CSV.');
             return [];
         }
 
-        const headers = lines[0].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
         console.log('CSV Headers:', headers);
-        const templates = [];
 
-        for (let i = 1; i < lines.length; i++) {
-            const currentLine = lines[i];
-            console.log('Processing CSV line:', currentLine);
-            const regex = /(?:^|,)("(?:[^\"]+|\"\")*"|[^,]*)/g;
-            let match;
-            const values = [];
-            while ((match = regex.exec(currentLine)) !== null) {
-                let value = match[1];
-                if (value.startsWith(',')) value = value.substring(1);
-                if (value.startsWith('"') && value.endsWith('"')) {
-                    value = value.substring(1, value.length - 1).replace(/""/g, '"');
-                }
-                values.push(value);
+        let currentLineIndex = 1;
+        let currentRecord = [];
+        let inQuote = false;
+        let currentField = '';
+
+        while (currentLineIndex < lines.length || (inQuote && currentLineIndex === lines.length)) { // Continue if in quote or more lines
+            let line = lines[currentLineIndex];
+            let charIndex = 0;
+
+            if (currentLineIndex === lines.length) { // If we reached end of lines but still in quote, it's an error or malformed CSV
+                console.error("Malformed CSV: Unexpected end of file while in a quoted field.");
+                break;
             }
-            console.log('Parsed values for line:', values);
 
-            if (values.length === headers.length) {
-                const item = {};
-                for (let j = 0; j < headers.length; j++) {
-                    item[headers[j]] = values[j];
-                }
-                console.log('Parsed item:', item);
+            while (charIndex < line.length) {
+                const char = line[charIndex];
+                const nextChar = line[charIndex + 1];
 
-                let folder = templates.find(f => f.folder === item.folder);
-                if (!folder) {
-                    folder = { folder: item.folder, templates: [] };
-                    templates.push(folder);
-                    console.log('New folder created:', folder.folder);
+                if (char === '"') {
+                    if (inQuote && nextChar === '"') { // Escaped double quote
+                        currentField += '"';
+                        charIndex += 2;
+                    } else {
+                        inQuote = !inQuote;
+                        charIndex++;
+                    }
+                } else if (char === ',' && !inQuote) {
+                    currentRecord.push(currentField);
+                    currentField = '';
+                    charIndex++;
+                } else {
+                    currentField += char;
+                    charIndex++;
                 }
-                folder.templates.push({ title: item.title, content: item.content });
-                console.log('Template added to folder:', item.title, folder.folder);
+            }
+
+            if (inQuote) {
+                currentField += '\n'; // Add newline if field continues on next line
             } else {
-                console.warn('Skipping malformed CSV line due to header/value mismatch:', currentLine);
+                currentRecord.push(currentField); // Add the last field of the line/record
+                currentField = ''; // Reset for next record
+
+                if (currentRecord.length === headers.length) {
+                    const item = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        // Remove surrounding quotes if present, and unescape internal quotes
+                        let value = currentRecord[j];
+                        if (value.startsWith('"') && value.endsWith('"')) {
+                            value = value.substring(1, value.length - 1).replace(/""/g, '"');
+                        }
+                        item[headers[j]] = value;
+                    }
+
+                    let folder = templates.find(f => f.folder === item.folder);
+                    if (!folder) {
+                        folder = { folder: item.folder, templates: [] };
+                        templates.push(folder);
+                        console.log('New folder created:', folder.folder);
+                    }
+                    folder.templates.push({ title: item.title, content: item.content });
+                    console.log('Template added to folder:', item.title, folder.folder);
+                } else {
+                    console.warn('Skipping malformed CSV record due to header/field mismatch:', currentRecord);
+                }
+                currentRecord = []; // Reset for next record
             }
+            currentLineIndex++;
         }
         console.log('Converted templates from CSV:', templates);
         return templates;
@@ -199,8 +234,6 @@ export const initializeIO = () => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 console.log('CSV export initiated.');
-            } else {
-                console.log('No templates to export (CSV).');
             }
         });
     }
@@ -220,7 +253,7 @@ export const initializeIO = () => {
             if (file) {
                 handleImport(file);
             }
-            e.target.value = '';
+            e.target.value = ''; // Clear the input so the same file can be imported again
         });
     }
 
