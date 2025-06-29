@@ -220,7 +220,7 @@ export const initializeIO = () => {
             if (file) {
                 handleImport(file);
             }
-            e.target.value = ''; // Clear the input so the same file can be imported again
+            e.target.value = '';
         });
     }
 
