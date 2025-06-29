@@ -19,7 +19,6 @@ export const initializeIO = () => {
         let csv = headers.join(",") + "\n";
         data.forEach(folderObj => {
             folderObj.templates.forEach(template => {
-                // Ensure content is properly quoted and escaped for CSV
                 const folder = `"${folderObj.folder.replace(/"/g, '""')}"`;
                 const title = `"${template.title.replace(/"/g, '""')}"`;
                 const content = `"${template.content.replace(/"/g, '""')}"`;
@@ -48,11 +47,11 @@ export const initializeIO = () => {
         let inQuote = false;
         let currentField = '';
 
-        while (currentLineIndex < lines.length || (inQuote && currentLineIndex === lines.length)) { // Continue if in quote or more lines
+        while (currentLineIndex < lines.length || (inQuote && currentLineIndex === lines.length)) {
             let line = lines[currentLineIndex];
             let charIndex = 0;
 
-            if (currentLineIndex === lines.length) { // If we reached end of lines but still in quote, it's an error or malformed CSV
+            if (currentLineIndex === lines.length) {
                 console.error("Malformed CSV: Unexpected end of file while in a quoted field.");
                 break;
             }
@@ -62,7 +61,7 @@ export const initializeIO = () => {
                 const nextChar = line[charIndex + 1];
 
                 if (char === '"') {
-                    if (inQuote && nextChar === '"') { // Escaped double quote
+                    if (inQuote && nextChar === '"') { 
                         currentField += '"';
                         charIndex += 2;
                     } else {
@@ -80,15 +79,14 @@ export const initializeIO = () => {
             }
 
             if (inQuote) {
-                currentField += '\n'; // Add newline if field continues on next line
+                currentField += '\n'; 
             } else {
-                currentRecord.push(currentField); // Add the last field of the line/record
-                currentField = ''; // Reset for next record
+                currentRecord.push(currentField); 
+                currentField = ''; 
 
                 if (currentRecord.length === headers.length) {
                     const item = {};
                     for (let j = 0; j < headers.length; j++) {
-                        // Remove surrounding quotes if present, and unescape internal quotes
                         let value = currentRecord[j];
                         if (value.startsWith('"') && value.endsWith('"')) {
                             value = value.substring(1, value.length - 1).replace(/""/g, '"');
@@ -107,7 +105,7 @@ export const initializeIO = () => {
                 } else {
                     console.warn('Skipping malformed CSV record due to header/field mismatch:', currentRecord);
                 }
-                currentRecord = []; // Reset for next record
+                currentRecord = [];
             }
             currentLineIndex++;
         }
@@ -253,7 +251,7 @@ export const initializeIO = () => {
             if (file) {
                 handleImport(file);
             }
-            e.target.value = ''; // Clear the input so the same file can be imported again
+            e.target.value = ''; 
         });
     }
 
