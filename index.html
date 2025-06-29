@@ -22,7 +22,8 @@
                         </svg>
                     </button>
                     <div id="settings-dropdown" class="absolute right-0 mt-2 w-48 bg-zinc-900 rounded-lg shadow-xl hidden z-10 py-1">
-                        <a href="#" id="export-btn" class="block px-4 py-2 text-gray-200 hover:bg-zinc-800 transition-colors duration-200">Export Templates</a>
+                        <a href="#" id="export-json-btn" class="block px-4 py-2 text-gray-200 hover:bg-zinc-800 transition-colors duration-200">Export as JSON</a>
+                        <a href="#" id="export-csv-btn" class="block px-4 py-2 text-gray-200 hover:bg-zinc-800 transition-colors duration-200">Export as CSV</a>
                         <a href="#" id="import-btn" class="block px-4 py-2 text-gray-200 hover:bg-zinc-800 transition-colors duration-200">Import Templates</a>
                     </div>
                 </div>
@@ -45,7 +46,7 @@
         </div>
     </div>
 
-    <input type="file" id="import-file" class="hidden" accept=".json">
+    <input type="file" id="import-file" class="hidden" accept=".json,text/csv">
 
     <!-- Add Template Modal -->
     <div id="add-template-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden p-4">
